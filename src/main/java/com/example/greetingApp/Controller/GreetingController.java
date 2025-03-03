@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.*;
 import com.example.greetingApp.Service.GreetingService;
 import com.example.greetingApp.Model.Greeting;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * GreetingController handles HTTP requests for greeting messages.
@@ -40,5 +41,16 @@ public class GreetingController {
     @GetMapping
     public List<Greeting> getAllGreetings() {
         return greetingService.getAllGreetings();
+    }
+
+    /**
+     * Retrieves a greeting message by its ID.
+     * <p>
+     * Example:
+     * - curl -X GET "http://localhost:8080/greetings/{id}"
+     */
+    @GetMapping("/{id}")
+    public Optional<Greeting> getGreetingById(@PathVariable Long id) {
+        return greetingService.getGreetingById(id);
     }
 }
