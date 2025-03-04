@@ -1,15 +1,10 @@
 package com.example.greetingApp.Service;
 
-
-
-import com.example.greetingApp.dto.AuthUserDTO;
-import com.example.greetingApp.dto.LoginDTO;
 import com.example.greetingApp.Model.AuthUser;
 import com.example.greetingApp.Repository.AuthUserRepository;
 import com.example.greetingApp.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -20,39 +15,42 @@ public class AuthenticationService {
     @Autowired
     private AuthUserRepository authUserRepository;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
+    @Autowired(required=true)
     private JwtUtil jwtUtil;
 
-    public String registerUser(AuthUserDTO authUserDTO) {
-        if (authUserRepository.existsByEmail(authUserDTO.getEmail())) {
-            throw new RuntimeException("Email is already in use.");
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    // Register User
+    public String registerUser(AuthUser authUser) {
+        if (authUserRepository.existsByEmail(authUser.getEmail())) {
+            return "Email is already in use!";
         }
 
-        AuthUser newUser = new AuthUser();
-        newUser.setFirstName(authUserDTO.getFirstName());
-        newUser.setLastName(authUserDTO.getLastName());
-        newUser.setEmail(authUserDTO.getEmail());
-        newUser.setPassword(passwordEncoder.encode(authUserDTO.getPassword()));
+//        AuthUser user = new AuthUser();
+//        user.setFirstName(authUser.getFirstName());
+//        user.setLastName(authUser.getLastName());
+//        user.setEmail(authUser.getEmail());
+//        user.setPassword(passwordEncoder.encode(authUser.getPassword())); // Encrypt password
+        authUserRepository.save(authUser);
 
-        authUserRepository.save(newUser);
         return "User registered successfully!";
     }
 
-    public String loginUser(LoginDTO loginDTO) {
-        Optional<AuthUser> userOptional = authUserRepository.findByEmail(loginDTO.getEmail());
+    // Authenticate User and Generate Token
+    public String authenticateUser(String email, String password) {
+        Optional<AuthUser> userOpt = authUserRepository.findByEmail(email);
 
-        if (userOptional.isEmpty()) {
-            throw new RuntimeException("User not found!");
+        if (userOpt.isEmpty()) {
+            return "User not found!";
         }
 
-        AuthUser user = userOptional.get();
-        if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid email or password!");
+        AuthUser user = userOpt.get();
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            return "Invalid email or password!";
         }
 
-        return jwtUtil.generateToken(user.getEmail());
+        // Generate JWT Token using HMAC256
+        return jwtUtil.generateToken(email);
     }
 }

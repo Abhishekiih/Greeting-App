@@ -1,12 +1,12 @@
 package com.example.greetingApp.Controller;
 
-import com.example.greetingApp.dto.AuthUserDTO;
-import com.example.greetingApp.dto.LoginDTO;
+import com.example.greetingApp.Model.AuthUser;
 import com.example.greetingApp.Service.AuthenticationService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -15,15 +15,25 @@ public class AuthUserController {
     @Autowired
     private AuthenticationService authenticationService;
 
+    // Register User
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody AuthUserDTO authUserDTO) {
-        return ResponseEntity.status(201).body(authenticationService.registerUser(authUserDTO));
+    public ResponseEntity<String> registerUser(@RequestBody AuthUser authUser) {
+        String response = authenticationService.registerUser(authUser);
+        return ResponseEntity.ok(response);
     }
 
+    // Login User and Generate JWT Token
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginDTO loginDTO) {
-        String token = authenticationService.loginUser(loginDTO);
-        return ResponseEntity.ok().body("{\"message\": \"Login successful!\", \"token\": \"" + token + "\"}");
+    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> request) {
+        String token = authenticationService.authenticateUser(
+                request.get("email"),
+                request.get("password")
+        );
+
+        if (token.equals("User not found!") || token.equals("Invalid email or password!")) {
+            return ResponseEntity.status(401).body(Map.of("error", token));
+        }
+
+        return ResponseEntity.ok(Map.of("message", "Login successful!", "token", token));
     }
 }
-
